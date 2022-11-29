@@ -7,25 +7,23 @@ using UnityEngine;
 // A* Pathfinding
 public static class PathFinding {
 
-    //Recursiva?
-    //https://forum.unity.com/threads/a-pathfinding-movement-range.696911/
-   
-
     public static List<TileNode> FindPath(TileNode origin, TileNode target){
        
-        List<TileNode> toSearch = new List<TileNode>() {origin};
+        List<TileNode> toSearch = new List<TileNode>(){origin}; //Was using lists
         List<TileNode> processed = new List<TileNode>();
-
+        
+        //toSearch.Enqueue(origin);
         while(toSearch.Any()){
             TileNode current = toSearch[0];
 
             //Find the best F cost node
-            //TODO Usar heap com binary search para melhorar desempenho
+            //TODO Use  heap with binary search for better perfomance (If using lists)
             foreach(var t in toSearch){
                 if(t.F < current.F || t.F == current.F && t.H < current.H) current = t; 
             }
 
             processed.Add(current);
+            //toSearch.Dequeue();
             toSearch.Remove(current);
 
             //if Found the target node
@@ -33,7 +31,6 @@ public static class PathFinding {
                 TileNode currentPathTile = target;
                 List<TileNode> path = new List<TileNode>();
 
-                //Debug.Log(target.Coordinates.Position);
                 var count = 100;
                 while( currentPathTile != origin){
                     path.Add(currentPathTile);

@@ -1,48 +1,68 @@
 using System.Collections;
+using System;
 using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
+public enum Team{
+    RED,
+    BLUE
+}
+//Carrega todos os dados de um determinado personagem aqui para mostrar na tela
 public class BattleUnit : MonoBehaviour
 {
-    //Carrega todos os dados de um determinado personagem aqui para mostrar na tela
     //Existe unicamente pra representar as ações e guardar sua direção e posição
     //Avisar ao tile atual que ele não é walkable
-    //TODO quando a entidade andar pelo cenário, limpar o 'Connection' do tile anterior
-    public float moveSpeed = 7f;
-    public TileNode CurrentTile {get; private set;}
-    public bool IsMovingUnit {get; private set;}
-    //public List<TileNode> tilesInRange = new List<TileNode>();
-    private Coroutine MoveIE;
+    public float speedInitiave = 10f;
+    public Team teamType = Team.BLUE;
+
+    private int maxDistance = 3; [SerializeField]
+    public bool IsMyTurn;
     
+    public TileNode CurrentTile {get; private set;}
+
+    public static event Action<BattleUnit> PlaceBattleUnit; // Sinal pro battle manager que foi invocado
+    public static event Action EndOfAction; //Sinal de que a unidade terminou seu turno
+    public static event Action<BattleUnit> UnitDied; //Sinal de que a unidade morreu
+
+    // Movement of the Unit
+    public float moveSpeed = 7f;
+    public bool IsMovingUnit {get; private set;}
+    private Coroutine MoveIE;
 
     void Start(){
-        SetIsMovingUnit(false);
+        PlaceBattleUnit?.Invoke(this);
+        this.IsMovingUnit = false;
+        this.IsMyTurn = false;
     }
 
     public void SetCurrentTilePosition(TileNode tileNode){
-        CurrentTile = tileNode;
-        MapManager.Instance.entity = this; //Somente para debug , num futuro mandar adicionar numa lista do manager
+        this.CurrentTile = tileNode;
     }
 
-    //TODO refatorar daqui para baixo
-    //Criar classe de entidade possui essa funçao a ser sobrecarregada
-    public virtual void GetTilesInRange(TileNode origin, int range){
+
+    //Tornar sobrecarregavel pra variar a distancia de movimento de acordo com o personagem?
+    public void GetTilesInRange(){
         
     }
 
-    public void SetIsMovingUnit(bool value){
-        IsMovingUnit = value;
+    public void SetIsMyTurn(bool value){
+        this.IsMyTurn = value;
     }
 
-    IEnumerator Move(){
+    IEnumerator IniateMovement(){
+
+        this.CurrentTile.isWalkable = true; 
         for(var tile = MapManager.Instance.path.Count - 1 ; tile >= 0; tile--) {
             MoveIE =  StartCoroutine(MoveToTile(MapManager.Instance.path[tile]));
             yield return MoveIE;
         }
-        CurrentTile = MapManager.Instance.path[0]; //ultimo tile é o primeiro na lista
+        MapManager.Instance.path[0].SetBattleUnitInThisTile(this);
         MapManager.Instance.path.Clear();
-        SetIsMovingUnit(false);
+
+        this.IsMovingUnit = false;
+        this.SetIsMyTurn(false);
+        EndOfAction?.Invoke();
     }
 
     private IEnumerator MoveToTile(TileNode tile){
@@ -59,17 +79,18 @@ public class BattleUnit : MonoBehaviour
             rotation = Quaternion.LookRotation(-direction);
 
             transform.position = Vector3.MoveTowards(transform.position,target,step);
-            transform.rotation = Quaternion.Slerp(transform.rotation, rotation,Time.deltaTime *25f );
+            transform.rotation = Quaternion.Slerp(transform.rotation, rotation,Time.deltaTime * 25f );
             yield return null;
 
         }
     }
 
-
-    void Update(){
-        if(Input.GetButtonDown("Fire1") && !IsMovingUnit ){
-            SetIsMovingUnit(true);
-            StartCoroutine(Move());
+    //Entity Actions abaixo
+    public void SetMovement(){
+        if(!IsMovingUnit && IsMyTurn){
+            IsMovingUnit = true;
+            StartCoroutine(IniateMovement());
+            
         }
     }
 

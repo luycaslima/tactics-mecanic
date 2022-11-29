@@ -30,7 +30,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 4001452014089995659}
+  - {fileID: 5903819948646954536}
   m_Father: {fileID: 0}
   m_RootOrder: 0
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
@@ -47,7 +47,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   isWalkable: 1
+  isSelectable: 0
   entityToSpawn: {fileID: 0}
+  Neighbors: []
 --- !u!65 &7342141335159566621
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -61,7 +63,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0.5, z: 0}
---- !u!1001 &3459532086806209120
+--- !u!1001 &6225150663551750595
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -130,9 +132,9 @@ PrefabInstance:
       objectReference: {fileID: 0}
     m_RemovedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a33b2261c1e70f44ab55350231c9472e, type: 3}
---- !u!4 &4001452014089995659 stripped
+--- !u!4 &5903819948646954536 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: a33b2261c1e70f44ab55350231c9472e,
     type: 3}
-  m_PrefabInstance: {fileID: 3459532086806209120}
+  m_PrefabInstance: {fileID: 6225150663551750595}
   m_PrefabAsset: {fileID: 0}

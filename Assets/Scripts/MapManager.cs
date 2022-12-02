@@ -1,4 +1,3 @@
-using System.Collections;
 using System;
 using System.Linq;
 using System.Collections.Generic;
@@ -6,26 +5,20 @@ using UnityEngine;
 
 public class MapManager : MonoBehaviour
 {
-    public static MapManager Instance;
+   
     public GameObject gameObjectsGroundTileMap;
     public bool _drawConnections;
     
-    //TODO PATHFINDING REESTRUTURAR COMO ESSE PATH É SALVO E COMO SALVAR OS TILES
-    //CADA ENTIDADE SO PRECISA SABER UMA DISTANCIA ESPECIFICA
     public List<TileNode> path = new List<TileNode>();
-    //private void OnDestroy() => TileNode.OnHoverTile -= OnTileHover;
-
+    [SerializeField] private List<TileNode> tilesInRange = new List<TileNode>();
     public Dictionary<Vector3,TileNode> Tiles{get; private set;}
-    private void Awake() => Instance = this;
 
 
-    void Start()
-    {
-        //Pega todos os gameobjects de TileNodes
+    public void Init(){
+         //Pega todos os gameobjects de TileNodes
         var tilesObjects = gameObjectsGroundTileMap.GetComponentsInChildren<TileNode>();
         Tiles = GetTiles(tilesObjects); //Inicializa os tiles e entidades sobre ele e Retorna o dicionario de tiles 
         foreach(var tile in tilesObjects) tile.FindNeighbors(); // Mandar todos saberem quem são seus vizinhos
-
     }
 
     public Dictionary<Vector3,TileNode> GetTiles(TileNode[] tiles) {
@@ -35,6 +28,42 @@ public class MapManager : MonoBehaviour
             grid.Add(tile.Coordinates.Position, tile);
         }
         return grid;
+    }
+
+    private void ResetSelectableTiles(){
+        if(tilesInRange.Count == 0) return;
+        foreach(var tile in tilesInRange){
+            tile.SetIsSelectable(false);
+        }
+        tilesInRange.Clear();
+    }
+
+    //Tornar sobrecarregavel pra variar a distancia de movimento de acordo com o personagem?
+    public void GetTilesInRange(BattleUnit unit){
+        ResetSelectableTiles();
+
+        List<TileNode> inRange = new List<TileNode>();
+        List<TileNode> toVisit = new List<TileNode>() {unit.CurrentTile};
+
+        int count = 0;
+       
+        while(count < unit.maxDistance){
+            var neighborTiles = new List<TileNode>();
+            
+            foreach(var tile in toVisit){
+                neighborTiles.AddRange(tile.Neighbors);
+                tile.SetIsSelectable(true);
+            }
+
+            inRange.AddRange(neighborTiles);
+            toVisit = neighborTiles;
+            count++;
+        }
+        
+        unit.CurrentTile.SetIsSelectable(false);
+        inRange.Remove( unit.CurrentTile);
+        tilesInRange = inRange.Distinct().ToList();
+
     }
 
     //Pega o tile na posição dita no dicionário (usado por todos os Tilenodes saberem seu vizinho)
@@ -51,10 +80,6 @@ public class MapManager : MonoBehaviour
     private void OnDrawGizmos() {
             if (!Application.isPlaying || !_drawConnections) return;
             Gizmos.color = Color.red;
-            /*foreach (var tile in Tiles) {
-                if (tile.Value.Connection == null) continue;
-                Gizmos.DrawLine(tile.Key + new Vector3(0,1.2f,0) , tile.Value.Connection.Coordinates.Position + new Vector3(0,1.2f,0));
-            }*/
             if (path == null) return;
             foreach(var tile in path){
                 Gizmos.DrawLine(tile.Coordinates.Position + new Vector3(0,1.2f,0) , tile.Connection.Coordinates.Position + new Vector3(0,1.2f,0));

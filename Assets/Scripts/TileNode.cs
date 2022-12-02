@@ -8,12 +8,11 @@ public class TileNode : MonoBehaviour
 {
     //TODO Criar alguma representação visual no editor do objeto a ser spawnado  ou um tile especifico pra isso (herda essa classe)
     public bool isWalkable;
-    public bool isSelectable = false;
+    [SerializeField] private bool isSelectable = false; 
     public GameObject entityToSpawn;
-    
+    [SerializeField] private GameObject selectableQuad; 
+
     public BattleUnit WhoIsAtThisPosition {get; private set;}
-    //Calcular isso sempre q a entidade puder caminhar
-    //public int distanceToTheEntity;
 
     private static readonly List<Vector3> PossibleMovabletDir = new List<Vector3>() {
         new Vector3(1,0,0),new Vector3(-1,0,0), new Vector3(0,0,1),new Vector3(0,0,-1)
@@ -33,6 +32,7 @@ public class TileNode : MonoBehaviour
     public void setG( float g ) => G = g;
     
     #endregion
+    
 
     public static event Action<TileNode> OnClickTile;
 
@@ -45,18 +45,24 @@ public class TileNode : MonoBehaviour
     //TODO For some weird reason, when beneath -4 in the axis Z, the tiles can't find all of the neighbours
     public void FindNeighbors(){
         Neighbors = new List<TileNode>();
-        foreach (var tile in PossibleMovabletDir.Select(dir => MapManager.Instance.GetNodeAtPosition(Coordinates.Position + dir)).Where(tile => tile != null)) {
+        foreach (var tile in PossibleMovabletDir.Select(dir => BattleManager.Instance.mapManager.GetNodeAtPosition(Coordinates.Position + dir)).Where(tile => tile != null)) {
             Neighbors.Add(tile);
         }
     }
+
+    public void SetIsSelectable(bool value){
+        selectableQuad.SetActive(value);
+        isSelectable = value;
+        Debug.Log(isSelectable);
+    } 
+        
     void onMouseOver(){
         if(!isSelectable) return;
         //TODO make glow when hover
     }
     void OnMouseDown(){
         //TODO change color when clicked and only invoke if is selectable
-        if(!isWalkable) return;
-        //if(!isWalkable || !isSelectable) return;
+        if(!isWalkable || !isSelectable) return;
         OnClickTile?.Invoke(this);
     }
 

@@ -247,6 +247,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   speedInitiave: 10
   teamType: 1
+  maxDistance: 3
   IsMyTurn: 0
   moveSpeed: 7
 --- !u!65 &8157649502749348127

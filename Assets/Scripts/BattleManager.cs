@@ -14,33 +14,36 @@ public enum BattleStates{
 
 public class BattleManager : MonoBehaviour
 {
-    public BattleStates battleStates;
-    public Team teamTurn;
+    [SerializeField]
+    private BattleStates battleStates;
+
+    [SerializeField]
+    private Team teamTurn;
 
     public static BattleManager Instance;
-    //public MapManager mapManager;
+    public MapManager mapManager;
 
     //Battle variables
     private Queue<BattleUnit> actQueue = new Queue<BattleUnit>(); //Controla a fila de atores no turno
-    //public List<BattleUnit> entities = new List<BattleUnit>(); // Controla a quantidade de atores presentes na cena e da assistencia a fila.
-
-    public List<BattleUnit> blueTeamEntities = new List<BattleUnit>();
-    public List<BattleUnit> redTeamEntities = new List<BattleUnit>();
-    private BattleUnit actualUnit;
+    [SerializeField] private List<BattleUnit> blueTeamEntities = new List<BattleUnit>(); 
+    [SerializeField] private List<BattleUnit> redTeamEntities = new List<BattleUnit>(); 
+    [SerializeField] private BattleUnit actualUnit;
     void Awake() => Instance = this;
     void OnDestroy(){ 
 
         BattleUnit.PlaceBattleUnit -= AddBattleUnitToList;
         BattleUnit.UnitDied -= RemoveUnitOfList;
         BattleUnit.EndOfAction -= EndUnitAction;
-        TileNode.OnClickTile -=  DirectBattleUnit;
+        TileNode.OnClickTile -=  MoveBattleUnit;
     }
 
     // Start is called before the first frame update
     void Start()
     {
-        //mapManager = GetComponentInChildren<MapManager>();
-        TileNode.OnClickTile += DirectBattleUnit;
+        mapManager = GetComponentInChildren<MapManager>();
+        mapManager.Init();
+
+        TileNode.OnClickTile += MoveBattleUnit;
         BattleUnit.PlaceBattleUnit += AddBattleUnitToList;
         BattleUnit.UnitDied += RemoveUnitOfList;
         BattleUnit.EndOfAction += EndUnitAction;
@@ -100,7 +103,7 @@ public class BattleManager : MonoBehaviour
     private void BeginNextUnitAction(){
         actualUnit = actQueue.Peek();
         actualUnit.SetIsMyTurn(true);
-        actualUnit.GetTilesInRange();
+        mapManager.GetTilesInRange(actualUnit);
     }
 
     private void EndUnitAction(){
@@ -110,10 +113,10 @@ public class BattleManager : MonoBehaviour
         }
     }
 
-    private void DirectBattleUnit(TileNode target){
+    private void MoveBattleUnit(TileNode target){
         if (actualUnit.IsMovingUnit) return;
-        MapManager.Instance.SetBestRouteForTheActor(actualUnit,target);
-        actualUnit.SetMovement();
+        mapManager.SetBestRouteForTheActor(actualUnit,target);
+        actualUnit.MoveAction();
     }
 
     // Update is called once per frame
@@ -129,7 +132,8 @@ public class BattleManager : MonoBehaviour
             case BattleStates.TEAM_TURN:
                 WaitQueueOfActors();
             break;
-
+            case BattleStates.END_BATTLE:
+            break;
 
         }   
     }

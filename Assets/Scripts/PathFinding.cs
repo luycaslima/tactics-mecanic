@@ -9,7 +9,7 @@ public static class PathFinding {
 
     public static List<TileNode> FindPath(TileNode origin, TileNode target){
        
-        List<TileNode> toSearch = new List<TileNode>(){origin}; //Was using lists
+        List<TileNode> toSearch = new List<TileNode>(){origin};
         List<TileNode> processed = new List<TileNode>();
         
         //toSearch.Enqueue(origin);

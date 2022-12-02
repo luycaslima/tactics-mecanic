@@ -8,18 +8,21 @@ public enum Team{
     RED,
     BLUE
 }
-//Carrega todos os dados de um determinado personagem aqui para mostrar na tela
+
+//This class only exist to load a entity and represent their actions on the screen
+
 public class BattleUnit : MonoBehaviour
 {
-    //Existe unicamente pra representar as ações e guardar sua direção e posição
-    //Avisar ao tile atual que ele não é walkable
     public float speedInitiave = 10f;
     public Team teamType = Team.BLUE;
 
-    private int maxDistance = 3; [SerializeField]
-    public bool IsMyTurn;
+    public int maxDistance = 3; 
+    
+    [SerializeField] 
+    private bool IsMyTurn;
     
     public TileNode CurrentTile {get; private set;}
+
 
     public static event Action<BattleUnit> PlaceBattleUnit; // Sinal pro battle manager que foi invocado
     public static event Action EndOfAction; //Sinal de que a unidade terminou seu turno
@@ -40,29 +43,28 @@ public class BattleUnit : MonoBehaviour
         this.CurrentTile = tileNode;
     }
 
-
-    //Tornar sobrecarregavel pra variar a distancia de movimento de acordo com o personagem?
-    public void GetTilesInRange(){
-        
-    }
-
     public void SetIsMyTurn(bool value){
         this.IsMyTurn = value;
     }
 
-    IEnumerator IniateMovement(){
-
-        this.CurrentTile.isWalkable = true; 
-        for(var tile = MapManager.Instance.path.Count - 1 ; tile >= 0; tile--) {
-            MoveIE =  StartCoroutine(MoveToTile(MapManager.Instance.path[tile]));
-            yield return MoveIE;
-        }
-        MapManager.Instance.path[0].SetBattleUnitInThisTile(this);
-        MapManager.Instance.path.Clear();
-
+    private void EndAction(){
         this.IsMovingUnit = false;
         this.SetIsMyTurn(false);
         EndOfAction?.Invoke();
+    }
+
+    #region  ENTITY_ACTIONS
+    private IEnumerator IniateMovement(){
+
+        this.CurrentTile.isWalkable = true; 
+        for(var tile = BattleManager.Instance.mapManager.path.Count - 1 ; tile >= 0; tile--) {
+            MoveIE =  StartCoroutine(MoveToTile(BattleManager.Instance.mapManager.path[tile]));
+            yield return MoveIE;
+        }
+        BattleManager.Instance.mapManager.path[0].SetBattleUnitInThisTile(this);
+        BattleManager.Instance.mapManager.path.Clear();
+
+        EndAction();
     }
 
     private IEnumerator MoveToTile(TileNode tile){
@@ -85,13 +87,30 @@ public class BattleUnit : MonoBehaviour
         }
     }
 
-    //Entity Actions abaixo
-    public void SetMovement(){
+   
+    public void MoveAction(){
         if(!IsMovingUnit && IsMyTurn){
             IsMovingUnit = true;
-            StartCoroutine(IniateMovement());
-            
+            StartCoroutine(IniateMovement());   
         }
     }
+
+    //Definir essas funções numa classe de Entidade => Monster, Summonner
+    public void WaitAction(){
+        EndAction();
+    }
+
+    public void AtackAction(){
+
+    }
+
+    public void SkillAction(){
+
+    }
+    public void SummonAction(){
+
+    }
+
+    #endregion
 
 }

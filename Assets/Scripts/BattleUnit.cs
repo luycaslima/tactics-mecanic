@@ -23,6 +23,7 @@ public class BattleUnit : MonoBehaviour
     
     public TileNode CurrentTile {get; private set;}
 
+    
 
     public static event Action<BattleUnit> PlaceBattleUnit; // Sinal pro battle manager que foi invocado
     public static event Action EndOfAction; //Sinal de que a unidade terminou seu turno
@@ -47,14 +48,13 @@ public class BattleUnit : MonoBehaviour
         this.IsMyTurn = value;
     }
 
-    private void EndAction(){
-        this.IsMovingUnit = false;
+    private void EndAction(){ 
         this.SetIsMyTurn(false);
         EndOfAction?.Invoke();
     }
 
     #region  ENTITY_ACTIONS
-    private IEnumerator IniateMovement(){
+    private IEnumerator IniatePathMovement(){
 
         this.CurrentTile.isWalkable = true; 
         for(var tile = BattleManager.Instance.mapManager.path.Count - 1 ; tile >= 0; tile--) {
@@ -64,6 +64,7 @@ public class BattleUnit : MonoBehaviour
         BattleManager.Instance.mapManager.path[0].SetBattleUnitInThisTile(this);
         BattleManager.Instance.mapManager.path.Clear();
 
+        this.IsMovingUnit = false;
         EndAction();
     }
 
@@ -87,17 +88,26 @@ public class BattleUnit : MonoBehaviour
         }
     }
 
+    //TODO not use this courotine, make one for the movement of the camera that when centers show the menu again
+    //This is only a workaround for problem below 
+    //Hidemenu in BattleManager needs some interval to show again because it will activate almost simultaneously with showMenu when call wait
+    private IEnumerator Wait(){
+        yield return new WaitForSeconds(.25f);
+        EndAction();
+    }
    
     public void MoveAction(){
         if(!IsMovingUnit && IsMyTurn){
             IsMovingUnit = true;
-            StartCoroutine(IniateMovement());   
+            StartCoroutine(IniatePathMovement());   
         }
     }
 
     //Definir essas funções numa classe de Entidade => Monster, Summonner
     public void WaitAction(){
-        EndAction();
+        StartCoroutine(Wait());
+       //EndAction();
+       
     }
 
     public void AtackAction(){

@@ -43,7 +43,7 @@ public static class PathFinding {
             }
 
             //Search in the neighbors aqui a gente checa a altura tbm
-            foreach(var neighbor in current.Neighbors.Where(t => t.isWalkable && !processed.Contains(t))){
+            foreach(var neighbor in current.Neighbors.Where(t => t.isWalkable && t.IsSelectable && !processed.Contains(t))){
                 var inSearch = toSearch.Contains(neighbor);
 
                 var costToNeighbor = current.G + current.Coordinates.GetDistance(neighbor.Coordinates);

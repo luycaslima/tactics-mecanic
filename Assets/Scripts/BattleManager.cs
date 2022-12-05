@@ -1,7 +1,10 @@
 using System.Collections;
 using System.Linq;
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
+
 
 public enum BattleStates{
     BEGIN_BATTLE,
@@ -14,32 +17,48 @@ public enum BattleStates{
 
 public class BattleManager : MonoBehaviour
 {
+    public static BattleManager Instance;
+
+    [Header("Self-References")]
+    [Space]
+    public MapManager mapManager;
+    private Camera cam;
+
+    [Header("States of the Game")]
+    [Space]
+    
     [SerializeField]
     private BattleStates battleStates;
-
     [SerializeField]
     private Team teamTurn;
 
-    public static BattleManager Instance;
-    public MapManager mapManager;
-
-    //Battle variables
-    private Queue<BattleUnit> actQueue = new Queue<BattleUnit>(); //Controla a fila de atores no turno
+    [Header("Battle variables")]
+    [Space]
     [SerializeField] private List<BattleUnit> blueTeamEntities = new List<BattleUnit>(); 
     [SerializeField] private List<BattleUnit> redTeamEntities = new List<BattleUnit>(); 
-    [SerializeField] private BattleUnit actualUnit;
-    void Awake() => Instance = this;
-    void OnDestroy(){ 
+    public BattleUnit actualUnit {get; private set;}
+    private Queue<BattleUnit> actQueue = new Queue<BattleUnit>(); //Controla a fila de atores no turno
 
+
+    [Header("UI Events")]
+    [Space]
+    [SerializeField] 
+    private UnityEvent showActionsMenu;
+    [SerializeField] 
+    private UnityEvent hideActionsMenu;
+
+
+    void Awake() => Instance = this;
+    void OnDestroy(){
         BattleUnit.PlaceBattleUnit -= AddBattleUnitToList;
         BattleUnit.UnitDied -= RemoveUnitOfList;
         BattleUnit.EndOfAction -= EndUnitAction;
         TileNode.OnClickTile -=  MoveBattleUnit;
     }
 
-    // Start is called before the first frame update
     void Start()
-    {
+    {  
+        cam = Camera.main;
         mapManager = GetComponentInChildren<MapManager>();
         mapManager.Init();
 
@@ -52,21 +71,14 @@ public class BattleManager : MonoBehaviour
 
     }
 
-
-    //Add entities in the list of enemies(red) or player(blue)
-    private void AddBattleUnitToList(BattleUnit unit){
-        if (unit.teamType == Team.BLUE){
-            blueTeamEntities.Add(unit);
-        }else{
-            redTeamEntities.Add(unit);
-        }
+    private void InitiateBattle(){
+        battleStates = BattleStates.BEGIN_TURN;
+        teamTurn = Team.BLUE;
     }
-    private void RemoveUnitOfList(BattleUnit unit){
-        if (unit.teamType == Team.BLUE){
-            blueTeamEntities.Remove(unit);
-        }else{
-            redTeamEntities.Remove(unit);
-        }
+
+    private void EndBattle(){
+        if ( redTeamEntities.Count == 0) battleStates = BattleStates.WIN;
+        else battleStates = BattleStates.DEFEAT;
     }
 
     //Rearrange the queue of actors for the turn
@@ -88,11 +100,6 @@ public class BattleManager : MonoBehaviour
         //actQueue.OrderByDescending(unit => unit.speedInitiave); If arrange the queue based on a factor (Ex: Speed)
     }
 
-    private void InitiateBattle(){
-        battleStates = BattleStates.BEGIN_TURN;
-        teamTurn = Team.BLUE;
-    }
-
     private void WaitQueueOfActors(){
         if (actQueue.Count == 0){
             teamTurn =  (teamTurn == Team.RED) ? Team.BLUE : Team.RED; 
@@ -103,7 +110,28 @@ public class BattleManager : MonoBehaviour
     private void BeginNextUnitAction(){
         actualUnit = actQueue.Peek();
         actualUnit.SetIsMyTurn(true);
-        mapManager.GetTilesInRange(actualUnit);
+        //Call here a event to change the target of the camera on the character
+        showActionsMenu.Invoke();
+        //mapManager.GetTilesInRange(actualUnit);
+    }
+
+#region EVENTS_FUNCTIONS
+    //When unit is summoned, inkoke this function
+    //Add entities in the list based on the respective team (red/enemies, blue/your party)
+    private void AddBattleUnitToList(BattleUnit unit){
+        if (unit.teamType == Team.BLUE){
+            blueTeamEntities.Add(unit);
+        }else{
+            redTeamEntities.Add(unit);
+        }
+    }
+    //When the unit dies, invoke this function
+    private void RemoveUnitOfList(BattleUnit unit){
+        if (unit.teamType == Team.BLUE){
+            blueTeamEntities.Remove(unit);
+        }else{
+            redTeamEntities.Remove(unit);
+        }
     }
 
     private void EndUnitAction(){
@@ -111,6 +139,7 @@ public class BattleManager : MonoBehaviour
         if(actQueue.Count != 0 ){
             BeginNextUnitAction();
         }
+        mapManager.InvokeResetSelectableTiles();
     }
 
     private void MoveBattleUnit(TileNode target){
@@ -119,7 +148,27 @@ public class BattleManager : MonoBehaviour
         actualUnit.MoveAction();
     }
 
-    // Update is called once per frame
+    #endregion
+
+
+
+ 
+#region UNITY_UI_EVENTS
+    public void MoveActionEvent(){
+        mapManager.GetTilesInRange(actualUnit);
+        hideActionsMenu.Invoke();
+    }
+
+    public void AtackActionEvent(){
+
+    }
+
+    public void WaitActionEvent(){
+        actualUnit.WaitAction();
+        hideActionsMenu.Invoke(); 
+    }
+
+#endregion
     void Update()
     {
         switch(battleStates){
@@ -133,7 +182,16 @@ public class BattleManager : MonoBehaviour
                 WaitQueueOfActors();
             break;
             case BattleStates.END_BATTLE:
+                EndBattle();
             break;
+            case BattleStates.WIN:
+            break;
+
+            case BattleStates.DEFEAT:
+            break;
+
+            default:
+                throw new Exception("BATTLE STATE ERROR");
 
         }   
     }

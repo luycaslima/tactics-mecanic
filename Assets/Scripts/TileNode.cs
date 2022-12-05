@@ -8,7 +8,7 @@ public class TileNode : MonoBehaviour
 {
     //TODO Criar alguma representação visual no editor do objeto a ser spawnado  ou um tile especifico pra isso (herda essa classe)
     public bool isWalkable;
-    [SerializeField] private bool isSelectable = false; 
+    public bool IsSelectable {get; private set;} 
     public GameObject entityToSpawn;
     [SerializeField] private GameObject selectableQuad; 
 
@@ -36,6 +36,12 @@ public class TileNode : MonoBehaviour
 
     public static event Action<TileNode> OnClickTile;
 
+    void OnDestroy() =>  MapManager.ResetSelectableTiles -= ResetSelectableTile;
+
+    void Start(){ 
+        MapManager.ResetSelectableTiles += ResetSelectableTile;
+    }
+
     public void Init(){
         Coordinates.Position = transform.position;
         SpawnEntity();
@@ -49,45 +55,51 @@ public class TileNode : MonoBehaviour
             Neighbors.Add(tile);
         }
     }
-
+    
     public void SetIsSelectable(bool value){
         selectableQuad.SetActive(value);
-        isSelectable = value;
-        Debug.Log(isSelectable);
+        IsSelectable = value;
     } 
-        
+    
+
+    private void ResetSelectableTile(){
+        if (!IsSelectable) return;
+        selectableQuad.SetActive(false);
+        IsSelectable = false;
+    }
+
     void onMouseOver(){
-        if(!isSelectable) return;
+        if(!IsSelectable) return;
         //TODO make glow when hover
     }
     void OnMouseDown(){
         //TODO change color when clicked and only invoke if is selectable
-        if(!isWalkable || !isSelectable) return;
+        if(!isWalkable || !IsSelectable) return;
         OnClickTile?.Invoke(this);
     }
 
     public void SetBattleUnitInThisTile(BattleUnit unit){
         WhoIsAtThisPosition = unit;
         unit.SetCurrentTilePosition(this);
-        isWalkable = false;
+        isWalkable = false; //change this if troops can pass eachother
     }
 
     private void SpawnEntity(){
-        if(entityToSpawn != null){
-            var entity = Instantiate(entityToSpawn);
-            entity.transform.position = Coordinates.Position + new Vector3(0,1.5f,0);
-            entity.transform.rotation = Quaternion.identity;
-            var battleUnit = entity.GetComponent<BattleUnit>();
-            if (battleUnit != null){
-                SetBattleUnitInThisTile(battleUnit);
-            }
-        }
+       if(entityToSpawn == null) return;
+        
+        var entity = Instantiate(entityToSpawn);
+        entity.transform.position = Coordinates.Position + new Vector3(0,1.5f,0);
+        entity.transform.rotation = Quaternion.identity;
+        
+        var battleUnit = entity.GetComponent<BattleUnit>();
+        if (battleUnit != null) SetBattleUnitInThisTile(battleUnit);   
     }
-    }
+
+}
 
 
 public struct Coords {
-    //Distancia entre um tile a outro 
+    //Distancie between two tiles
     public float GetDistance(Coords target){
         var dist = new Vector3Int(Mathf.Abs((int)Position.x - (int)target.Position.x), 0,Mathf.Abs((int)Position.z - (int)target.Position.z));
         var min = Mathf.Min(dist.x, dist.z);

@@ -1,5 +1,4 @@
 using System;
-using System.Linq;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -10,9 +9,9 @@ public class MapManager : MonoBehaviour
     public bool _drawConnections;
     
     public List<TileNode> path = new List<TileNode>();
-    [SerializeField] private List<TileNode> tilesInRange = new List<TileNode>();
     public Dictionary<Vector3,TileNode> Tiles{get; private set;}
 
+    public static event Action ResetSelectableTiles;
 
     public void Init(){
          //Pega todos os gameobjects de TileNodes
@@ -29,18 +28,13 @@ public class MapManager : MonoBehaviour
         }
         return grid;
     }
-
-    private void ResetSelectableTiles(){
-        if(tilesInRange.Count == 0) return;
-        foreach(var tile in tilesInRange){
-            tile.SetIsSelectable(false);
-        }
-        tilesInRange.Clear();
+    
+    public void InvokeResetSelectableTiles(){
+        ResetSelectableTiles?.Invoke();
     }
 
-    //Tornar sobrecarregavel pra variar a distancia de movimento de acordo com o personagem?
     public void GetTilesInRange(BattleUnit unit){
-        ResetSelectableTiles();
+        InvokeResetSelectableTiles();
 
         List<TileNode> inRange = new List<TileNode>();
         List<TileNode> toVisit = new List<TileNode>() {unit.CurrentTile};
@@ -59,16 +53,10 @@ public class MapManager : MonoBehaviour
             toVisit = neighborTiles;
             count++;
         }
-        
-        unit.CurrentTile.SetIsSelectable(false);
-        inRange.Remove( unit.CurrentTile);
-        tilesInRange = inRange.Distinct().ToList();
-
     }
 
     //Pega o tile na posição dita no dicionário (usado por todos os Tilenodes saberem seu vizinho)
     public TileNode GetNodeAtPosition(Vector3 pos) => Tiles.TryGetValue(pos, out var tile) ? tile: null;
-
 
     public void SetBestRouteForTheActor(BattleUnit unit, TileNode target){
         path = new List<TileNode>();
